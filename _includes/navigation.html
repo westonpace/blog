@@ -1,5 +1,6 @@
-<nav>
+<div class="nav-scroller py-1 mb-2">
+  <nav class="nav d-flex justify-content-between">
   {% for item in site.data.navigation %}
-    <a href="/blog{{ item.link }}" {% if page.url == item.link %}class="current"{% endif %}>{{ item.name }}</a>
+    <a href="/blog{{ item.link }}" class="p-2 link-secondary" {% if page.url == item.link %}class="p-2 link-secondary current"{% endif %}>{{ item.name }}</a>
   {% endfor %}
 </nav>

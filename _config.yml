@@ -1,13 +1,4 @@
-collections:
-  authors:
-    output: true
-
 defaults:
-  - scope:
-      path: ""
-      type: "authors"
-    values:
-      layout: "author"
   - scope:
       path: ""
       type: "posts"
@@ -24,3 +15,8 @@ plugins:
   - jekyll-seo-tag
 
 baseurl: /blog
+highlighter: rouge
+markdown: kramdown
+kramdown:
+  input: GFM #Github Flavored Markdown
+  syntax_highlighter: rouge

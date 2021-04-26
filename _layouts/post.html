@@ -1,14 +1,22 @@
 ---
 layout: default
 ---
-<h1>{{ page.title }}</h1>
+<main class="container">
+  <div class="p-4 p-md-5 mb-4 text-white rounded bg-dark">
+    <div class="col-md-6 px-0">
+      <h1 class="display-4 fst-italic">{{ page.title }}</h1>
+      <p class="lead my-3">{{ page.excerpt }}</p>
+      <p class="lead mb-0"><a href="#" class="text-white fw-bold">Continue reading...</a></p>
+    </div>
+  </div>
 
-<p>
-  {{ page.date | date_to_string }}
-  {% assign author = site.authors | where: 'short_name', page.author | first %}
-  {% if author %}
-    - <a href="{{ author.url }}">{{ author.name }}</a>
-  {% endif %}
-</p>
 
-{{ content }}
+  <article class="blog-post">
+
+  <p class="blog-post-meta">
+    {{ page.date | date_to_string }}
+  </p>
+
+  {{ content | remove_first:page.excerpt }}
+  </article>
+</main>

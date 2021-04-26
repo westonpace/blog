@@ -29,6 +29,7 @@ GEM
       rouge (~> 3.0)
       safe_yaml (~> 1.0)
       terminal-table (~> 2.0)
+    jekyll-athena (0.0.2)
     jekyll-feed (0.15.1)
       jekyll (>= 3.7, < 5.0)
     jekyll-sass-converter (2.1.0)
@@ -69,9 +70,11 @@ PLATFORMS
 
 DEPENDENCIES
   jekyll
+  jekyll-athena
   jekyll-feed
   jekyll-seo-tag
   jekyll-sitemap
+  rouge
   wdm (>= 0.1.0)
 
 BUNDLED WITH

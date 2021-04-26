@@ -1,3 +1,14 @@
 ---
 ---
 @import "main";
+
+// Bootstrap overrides:  TODO: Find a better way to do this
+a, a:visited, a:hover, a:active {
+  color: black;
+}
+
+div.highlight {
+  padding: 8px;
+  margin-left: 64px;
+  margin-right: 64px;
+}
