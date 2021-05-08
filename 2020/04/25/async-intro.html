@@ -1,0 +1,199 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Intro to asynchronous iteration</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+    <link rel="stylesheet" href="/blog/assets/css/styles.css">
+    <link rel="stylesheet" href="/blog/assets/css/syntax.css">
+    <link type="application/atom+xml" rel="alternate" href="/blog/feed.xml" />
+    <!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Intro to asynchronous iteration</title>
+<meta name="generator" content="Jekyll v4.2.0" />
+<meta property="og:title" content="Intro to asynchronous iteration" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In this series of posts I will review work I did recently which combined iteration with asynchronous development. Combining the two allows us to manually schedule both RAM as well as CPU to process large files in a streaming fashion while utilizing both pipeline as well as fan-out parallelism. The end result is something similar to reactive programming but pull based instead of push based." />
+<meta property="og:description" content="In this series of posts I will review work I did recently which combined iteration with asynchronous development. Combining the two allows us to manually schedule both RAM as well as CPU to process large files in a streaming fashion while utilizing both pipeline as well as fan-out parallelism. The end result is something similar to reactive programming but pull based instead of push based." />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-04-25T00:00:00+00:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Intro to asynchronous iteration" />
+<script type="application/ld+json">
+{"description":"In this series of posts I will review work I did recently which combined iteration with asynchronous development. Combining the two allows us to manually schedule both RAM as well as CPU to process large files in a streaming fashion while utilizing both pipeline as well as fan-out parallelism. The end result is something similar to reactive programming but pull based instead of push based.","url":"/blog/2020/04/25/async-intro.html","@type":"BlogPosting","headline":"Intro to asynchronous iteration","dateModified":"2020-04-25T00:00:00+00:00","datePublished":"2020-04-25T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"/blog/2020/04/25/async-intro.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+  <body>
+    <div class="container">
+      <header class="blog-header py-3">
+  <div class="row flex-nowrap justify-content-between align-items-center">
+    <div class="col-4 pt-1">
+      <a class="link-secondary" href="/blog/feed.xml">RSS</a>
+    </div>
+    <div class="col-4 text-center">
+      <a class="blog-header-logo text-dark" href="#">Weston Pace's Blog</a>
+    </div>
+    <div>
+    </div>
+  </div>
+</header>
+
+      <div class="nav-scroller py-1 mb-2">
+  <nav class="nav d-flex justify-content-between">
+  
+    <a href="/blog/" class="p-2 link-secondary" >Home</a>
+  
+    <a href="/blog/blog.html" class="p-2 link-secondary" >Blog</a>
+  
+    <a href="/blog/about.html" class="p-2 link-secondary" >About</a>
+  
+</nav>
+    </div>
+    <main class="container">
+  <div class="p-4 p-md-5 mb-4 text-white rounded bg-dark">
+    <div class="col-md-6 px-0">
+      <h1 class="display-4 fst-italic">Intro to asynchronous iteration</h1>
+      <p class="lead my-3"><p>In this series of posts I will review work I did recently which combined iteration with asynchronous development.
+Combining the two allows us to manually schedule both RAM as well as CPU to process large files in a streaming
+fashion while utilizing both pipeline as well as fan-out parallelism.  The end result is something similar to
+reactive programming but pull based instead of push based.</p>
+</p>
+      <p class="lead mb-0"><a href="#" class="text-white fw-bold">Continue reading...</a></p>
+    </div>
+  </div>
+
+
+  <article class="blog-post">
+
+  <p class="blog-post-meta">
+    25 Apr 2020
+  </p>
+
+  
+<h1 id="introduction">Introduction</h1>
+
+<p>This article will assume you are familiar with some basic asynchronous programming concepts.
+Callbacks/delegates and promises/futures/tasks are used throughout these posts.  If you are new to asynchronous
+programming I recommend checking out a short <a href="https://youtu.be/_7UZi-BVgfg">video</a> I made recently explaining
+the benefits.  In addition, you will probably want to be familiar with what an iterator is and how they can be
+used to reduce the memory pressure of an application.  Finally, I’ll be using C# for code blocks as C# has a
+good combination of builtin async support and conciseness.  I’ll avoid some of the newer features (e.g. 
+async/await, span, etc.) to keep things universal.</p>
+
+<p>Before we define asynchronous iteration let us start with some motivation and a concrete example.  I recently did
+some work for the Apache Arrow project which is the basis of these posts.  I worked on the dataset scanner which
+scans a collection of files in an iterative fashion to allow incremental analytics to run on datasets larger than
+the available RAM in the system.  The first thing the scanner needs to do is start reading data from files.</p>
+
+<p>File I/O is a simple operation that is often handled asynchronously.  File I/O will be the motivation behind most
+of these posts as it was the motivation behind my work on Arrow.  When reading data from a disk we make an OS call
+and that call might block.  To handle this, most modern languages give us asynchronous methods for reading files.
+There are a number of technologies (e.g. epoll &amp; libuv, io_uring, IOCP) that might be behind these methods but the
+specifics don’t matter.</p>
+
+<p>With that out of the way we can go ahead and concretely define what an asynchronous iterator is.  I’ll add a
+definition for a synchronous iterator as well so you can see the contrast:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">interface</span> <span class="nc">Iterator</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span>
+<span class="p">{</span>
+    <span class="n">T</span> <span class="nf">Next</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="k">interface</span> <span class="nc">AsyncIterator</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span>
+<span class="p">{</span>
+    <span class="n">Task</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="nf">Next</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>There remains the minor matter of determining when we have reached the end of iteration but for simplicity we
+will define the end marker as <code class="language-plaintext highlighter-rouge">null</code>.</p>
+
+<h1 id="our-first-asynciterator">Our First AsyncIterator</h1>
+
+<p>Now we can take a pass at defining a simple asynchronous iterator for reading a file:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">Buffer</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="kt">byte</span><span class="p">[]</span> <span class="n">Data</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="n">init</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">Length</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="n">init</span><span class="p">;</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">public</span> <span class="k">class</span> <span class="nc">AsyncFileIterator</span> <span class="p">:</span> <span class="n">AsyncIterator</span><span class="p">&lt;</span><span class="n">Buffer</span><span class="p">&gt;</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="n">Task</span><span class="p">&lt;</span><span class="n">Buffer</span><span class="p">&gt;</span> <span class="nf">Next</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The details of the implementation are omitted for brevity.  What is important to understand is that the
+file read is broken into two stages.</p>
+
+<ol>
+  <li>A synchronous <strong>provisioning</strong> step that calculates the offset into the file to read (since we are streaming
+a file this offset will grow by some block size each call).</li>
+  <li>An asynchronous <strong>execution</strong> step that actually performs the read.</li>
+</ol>
+
+<p>Although we are currently talking about files this pattern of synchronous <strong>provisioning</strong> and asynchronous
+<strong>execution</strong> is present in nearly every asynchronous generator.  We will revisit these concepts when we
+start to look at parallel execution.</p>
+
+<h1 id="iteration">Iteration</h1>
+
+<p>The first (and most basic) goal is iterating through each item in the iterator until we reach the end.
+Let’s consider a simple <code class="language-plaintext highlighter-rouge">Visit</code> operation:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">static</span> <span class="n">Task</span> <span class="nf">Visit</span><span class="p">(</span><span class="n">AsyncIterator</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="n">iterator</span><span class="p">,</span> <span class="n">Action</span><span class="p">&lt;</span><span class="n">T</span><span class="p">&gt;</span> <span class="n">visitor</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Again we will skip the details but the flow of execution is roughly:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Do:
+  Provision next task from the asynchronous iterator
+  Wait for the task to complete
+  Run visitor on result
+While result != null
+</code></pre></div></div>
+
+<p>Assuming you have <code class="language-plaintext highlighter-rouge">async/await</code> keywords this method is actually pretty easy to implement.  Without them it turns into
+a tricky set of recursive continuations.  The important things to note here is that <strong>each task must be completed before
+we provision the next task.</strong>  When we start to talk about parallel execution this rule will get relaxed and more nuance
+will be introduced.  With this rule in place there is no need for any synchronization (beyond that which is likely contained
+in the <code class="language-plaintext highlighter-rouge">Task</code> (i.e. <code class="language-plaintext highlighter-rouge">promise/future</code>) implementation.)</p>
+
+<h1 id="so-what">So what?</h1>
+
+<p>Given that we are waiting for each item to complete before processing the next it may be prudent to ask if we have changed anything
+at all from the synchronous version.  As it turns out, we have.  In the synchronous version the thread that calls <code class="language-plaintext highlighter-rouge">Visit</code> will be
+blocked for the duration of the call.  In the asynchronous version a task is scheduled each time a block of I/O completes and the calling
+thread returns immediately.  The exact details of what happens when a task is scheduled depends on the tools you are using
+(perhaps I will write about that in the future) but to illustrate this here are two instances of a basic file visit in C#, visualized
+with the Visual Studio Concurrency Visualizer:</p>
+
+<p>[<img src="/blog/assets/images/sync-file-iter.png" alt="sync" />]</p>
+
+<p>In the above syncrhonous version the main thread is doing all the work (green).</p>
+
+<p>[<img src="/blog/assets/images/async-file-iter.png" alt="async" />]</p>
+
+<p>In the above asynchronous version the work (green) is spread out across a number of worker threads while the main thread is mostly idle.</p>
+
+<p>There is no significant performance difference between the two approaches because there is no actual parallelism going on.
+However, by freeing up the calling thread, we can reduce the total number of threads that we need (this reduction is not well illustrated
+in the above diagrams due to the simplicity of the task but for more details see the video linked in the introduction).</p>
+
+<h1 id="whats-next">What’s next?</h1>
+
+<p>In the next post I will go over readahead and introduce a new concept I’ve coined “asynchronous reentrancy.”  I will show how readahead
+makes it easy to introduce parallelism in asynchronous iterators.</p>
+
+<h1 id="try-it-out">Try it out</h1>
+
+<p>Implementing a basic <code class="language-plaintext highlighter-rouge">AsyncFileIterator</code> and <code class="language-plaintext highlighter-rouge">Visit</code> function should only take a moment in C# (assuming familiarity with TPL) or Javascript.
+Give it a shot and prove to yourself it works.</p>
+
+  </article>
+</main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
+  </body>
+</html>

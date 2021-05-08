@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/blog/feed.xml" rel="self" type="application/atom+xml" /><link href="/blog/" rel="alternate" type="text/html" /><updated>2021-05-08T09:50:46+00:00</updated><id>/blog/feed.xml</id><entry><title type="html">Git History - Novel or Ledger?</title><link href="/blog/2020/05/06/git-history.html" rel="alternate" type="text/html" title="Git History - Novel or Ledger?" /><published>2020-05-06T00:00:00+00:00</published><updated>2020-05-06T00:00:00+00:00</updated><id>/blog/2020/05/06/git-history</id><content type="html" xml:base="/blog/2020/05/06/git-history.html">&lt;p&gt;The varied approaches to repository history span the breadth from incoherent rambling trains of thought to orderly prose-like novels.  Typing in a commit message is a practice which introduces twinges of angst into a developer’s day.  At the heart of this anxiety is a tension between the two roles Git serves, bookkeeper and mediator.  It’s one of those things I always thought I had figured out but slowly I’ve come to see things in a whole new light.  A viewpoint I hope to share with this post.&lt;/p&gt;
+
+&lt;h1 id=&quot;the-bookkeeper&quot;&gt;The Bookkeeper&lt;/h1&gt;
+
+&lt;div class=&quot;row&quot;&gt;
+  &lt;div class=&quot;col-md-9&quot;&gt;
+    &lt;p&gt;
+While Git can serve many functions for different teams they can largely be divided into two categories.  First, Git is a developer's backup tool and personal notebook.  This concept is probably pretty familiar to you.  For myself it was where I started.  These types of commit messages illustrate Git's secretarial role
+    &lt;/p&gt;
+    &lt;ul&gt;
+      &lt;li&gt;
+Commit early and often - You will be able to restore to different points in history in case you need to abandon your approach.  Also, if you push often then you will have backups in case your system crashes.
+      &lt;/li&gt;
+      &lt;li&gt;
+Picking up your trail - Most developers work on several features at once.  It gives you something to do while waiting on a code review, builds, or just to liven up the monotony.  It's easy to forget where you were when you come back to a branch.  One look at the ledger should refresh your memory.
+      &lt;/li&gt;
+      &lt;li&gt;
+Evidence of work - Comitting unfinished, rough code at the end of the day can often help share what you are working on.  Note, I'm not advocating for managers stalking their developers' commit histories.  It's simply that overcommunication and transparency smooth the gears of any team.
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/div&gt;
+  &lt;figure class=&quot;col-md-3 figure&quot;&gt;
+    &lt;img alt=&quot;example git log of ledger&quot; src=&quot;/blog/assets/images/2020-05-06/git-ledger.png&quot; class=&quot;img-fluid figure-img rounded&quot; /&gt;
+    &lt;figcaption class=&quot;figure-caption text-center&quot;&gt;A typical day in the life&lt;/figcaption&gt;
+  &lt;/figure&gt;
+&lt;/div&gt;
+
+&lt;h1 id=&quot;the-mediator&quot;&gt;The Mediator&lt;/h1&gt;
+
+&lt;p&gt;Git’s book keeper role is useful even on a team of one as a personal backup and notepad.  Once a team starts to grow (or a repository is consumed by more people) it starts to serve another role, communicating changes amongst developers, users, and anyone else.  This is the role that gives us patterns such as &lt;a href=&quot;https://www.conventionalcommits.org/en/v1.0.0/&quot;&gt;conventional (semantic) commits&lt;/a&gt;.&lt;/p&gt;
+
+&lt;figure class=&quot;figure mx-auto d-block&quot;&gt;
+  &lt;img alt=&quot;example of semantic commit history&quot; src=&quot;/blog/assets/images/2020-05-06/clean-commits.png&quot; class=&quot;figure-img rounded mx-auto d-block&quot; /&gt;
+  &lt;figcaption class=&quot;figure-caption text-center&quot;&gt;The Angular Material project keeps a very clean linear semantic commit history&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;The advantages of such a history are equally straightforward:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Very easy to consume by users.  There is no “noise” in the history.&lt;/li&gt;
+  &lt;li&gt;Can be easily used to create release notes.&lt;/li&gt;
+  &lt;li&gt;If using semantic commits, the history can be further processed (e.g. to automatically report breaking changes).&lt;/li&gt;
+  &lt;li&gt;Easy to bisect and blame, focuses on the “why” and not the “what”.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;the-union&quot;&gt;The Union&lt;/h1&gt;
+
+&lt;div class=&quot;row&quot;&gt;
+  &lt;div class=&quot;col-md-9&quot;&gt;
+    &lt;p&gt;
+Now it should be clear where the impasse lies.  A &quot;clean&quot; history fails to serve as a record of a developer's work in progress.  Trying to fit to that model while developing would discourage healthy commit practices.  Meanwhile, the cluttered ledger of the book keeper is filled with too much noise to be useful as a communication tool.  The history in such a repository is simply ignored completely.
+    &lt;/p&gt;
+    &lt;p&gt;
+As it turns out, the solution is simple.  &lt;bold&gt;Use a ledger for development branches and a clean history for your releasing branches&lt;/bold&gt;.  By &quot;releasing branches&quot; I mean those that you either build releases from or export out to other repositories.  For example, one of the most popular lightweight workflows is the stable trunk.  Every feature is done on a standalone branch (often on a fork of the main repository) and only put back on the trunk when the feature is finished.  Releases happen off of main and there is no back porting of fixes.
+    &lt;/p&gt;
+    &lt;p&gt;
+This of course leaves us with one simple question, &quot;How can this be achieved?&quot;
+    &lt;/p&gt;
+  &lt;/div&gt;
+  &lt;figure class=&quot;col-md-3 figure&quot;&gt;
+    &lt;img alt=&quot;dirty branches merging to a clean tree&quot; src=&quot;/blog/assets/images/2020-05-06/dirty-branch-clean-trunk.png&quot; class=&quot;figure-img img-fluid rounded&quot; /&gt;
+    &lt;figcaption class=&quot;figure-caption text-center&quot;&gt;Rough drafts go in the branches, final drafts in the trunk&lt;/figcaption&gt;
+  &lt;/figure&gt;
+&lt;/div&gt;
+
+&lt;h1 id=&quot;a-case-for-rewriting-history&quot;&gt;A case for rewriting history&lt;/h1&gt;
+
+&lt;div class=&quot;row&quot;&gt;
+  &lt;div class=&quot;col-md-9&quot;&gt;
+    &lt;p&gt;
+Rewriting history is one of Git's most controversial yet powerful features.  However, the inescapable truth (that it took me ages to realize) is that this &quot;ledger-work&quot; simply does not belong.  Merging it into a releasable branch is the equivalent of turning in your rough drafts when you give a final copy of your paper to your professor.  Frankly, nobody cares about your stream of thought outside of yourself (and possibly an eager manager or teammate).
+    &lt;/p&gt;
+    &lt;p&gt;
+The technical details of how you eventually squash the work don't really matter.  Two popular approaches are squash rebasing and squash merging.  Squash rebase uses an interactive rebase (with squash) so that there is only a single commit on your feature branch (this has the added benefit of making it easier to rebase the trunk in rebase-only workflows). Squash merges use the &quot;--squash&quot; flag when you merge your work into the main trunk.  The second one tends to be safer and, if you're using something like Github, you can actually [enforce](https://docs.github.com/en/github/administering-a-repository/configuring-commit-squashing-for-pull-requests) all merges be squashed.
+    &lt;/p&gt;
+    &lt;p&gt;
+If you still aren't convinced and you are certain you need to keep all of these notes around in perpetuity (seriously, YAGNI) then there is a simple workaround.  You can keep the branches on your end.  Normally, developers will clean out their local branches after merging yet there is nothing that forces you to do this.  Admittedly, your local repository is going to fill up with noise but that is kind of the point.  If this seems distasteful to you then I would ask why it is any better to burden everyone else with your noise.
+    &lt;/p&gt;
+    &lt;div class=&quot;alert alert-warning&quot; role=&quot;alert&quot;&gt;
+      &lt;h5&gt;Isn't it dangerous?&lt;/h5&gt;
+      &lt;p&gt;
+It is valid to be concerned and cautious about rewriting history because of the potential to lose work (although you can almost always recover anything short of a hard reset by digging around in the ref log).  However, if done right, it does not have to be risky or complex.  Usually you can configure your repository to squash merge PRs.  This should be straightforward and foolproof.
+      &lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;col-md-3&quot;&gt;
+    &lt;div class=&quot;card&quot;&gt;
+      &lt;div class=&quot;card-header&quot;&gt;
+How did we get here?
+      &lt;/div&gt;
+      &lt;div class=&quot;card-body&quot;&gt;
+        &lt;p&gt;
+If it is any comfort you should keep in mind that Git was not created to be a ledger.  It was created as a collaboration and communication tool.  Specifically it was created to ease massively parallel development on a code base.  Developers needed to be able to express and mediate their changes in a systematic and structured way.
+        &lt;/p&gt;
+        &lt;p&gt;
+The Linux kernel (for which Git was initially developed) still submits a majority of patches from individuals via email.  No patch even enters the ecosystem until all of the ledger work has been finished and thrown away.  The fact that we can use Git as our ledger is a bonus that shouldn't spill over and ruin the fundamental purpose, communication.
+        &lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;h1 id=&quot;nested-repositories-and-complex-situations&quot;&gt;Nested repositories and complex situations&lt;/h1&gt;
+
+&lt;div class=&quot;row&quot;&gt;
+  &lt;div class=&quot;col-md-9&quot;&gt;
+    &lt;p&gt;
+More complex projects have multiple layers.  For example, a project might move from feature branches to release branches and then port those features from a release branch as back ports onto older releases.  Or a project might feed into another larger solution project.  Or you might even have something as complex as the git kernel, a large and rich graph of repositories.
+    &lt;/p&gt;
+    &lt;p&gt;
+In these situations we are again faced with merging a feature higher upstream.  So it is natural to ask if we should be deleting history again.  In almost all cases the answer is no.  Deleting history is for removing the noisy cruft that never &lt;italic&gt;really&lt;/italic&gt; belonged in the repository in the first place.
+    &lt;/p&gt;
+    &lt;p&gt;
+In order to figure out what you should do you need to remember that the purpose of git history is to communicate to other developers.  Do the messages and diffs you are bringing along communicate useful information for the consumers?  If so, then it is best to keep it.  If not, then you can safely discard it.
+    &lt;/p&gt;
+  &lt;/div&gt;
+  &lt;figure class=&quot;col-md-3 figure&quot;&gt;
+    &lt;img alt=&quot;a heirarchy of merges&quot; src=&quot;/blog/assets/images/2020-05-06/heirarchy.png&quot; class=&quot;figure-img img-fluid rounded&quot; /&gt;
+    &lt;figcaption class=&quot;figure-caption text-center&quot;&gt;Once a commit is clean there is little to discard.  Merge commits can contain valuable information (e.g. telling us how a feature had to adapt to be back ported into an older release.)&lt;/figcaption&gt;
+  &lt;/figure&gt;
+&lt;/div&gt;
+
+&lt;h1 id=&quot;final-thoughts&quot;&gt;Final thoughts&lt;/h1&gt;
+
+&lt;hr /&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Developer branches are noisy messy places.  This is a good thing and a best practice.&lt;/li&gt;
+  &lt;li&gt;Releasable branches should be clean and mess free.  They need to communicate clearly to team members and users.&lt;/li&gt;
+  &lt;li&gt;Rewriting history is necessary to remove the messy and useless train of thought information.  It can be done safely and it should not remove essential information.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;card&quot;&gt;
+  &lt;div class=&quot;card-header&quot;&gt;
+Postscript
+  &lt;/div&gt;
+  &lt;div class=&quot;card-body&quot;&gt;
+    &lt;h5&gt;A liability-driven case for history deletion&lt;/h5&gt;
+    &lt;p&gt;
+I've hoped so far to convince you to follow my advice since it is the most effective strategy to follow.  However, if you are working on a project that takes community contributions, then there is an even simpler reason to squash merges.  When you review an incoming pull request it is unlikely that you are diving in and reviewing each and every commit in that request.  Most likely what you are doing is reviewing the final impact of the PR, what your merge tool is going to show you by default.
+    &lt;/p&gt;
+    &lt;p&gt;
+In reality, there could be anything hidden amongst those innocent ledger-looking messages.  A malicious troll could commit copyrighted material (or downright illegal material) and then simply revert the commit and layer a useful change on top of it.  Even a non-malicious but naive user could accidentally be pushing their security credentials, or a massive binary file, simply from a place of misunderstanding.  If you are not looking at the individual commits, and you are not squashing the merge, then you are not reviewing everything that is going into your repository.
+    &lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</content><author><name></name></author><summary type="html">The varied approaches to repository history span the breadth from incoherent rambling trains of thought to orderly prose-like novels. Typing in a commit message is a practice which introduces twinges of angst into a developer’s day. At the heart of this anxiety is a tension between the two roles Git serves, bookkeeper and mediator. It’s one of those things I always thought I had figured out but slowly I’ve come to see things in a whole new light. A viewpoint I hope to share with this post.</summary></entry><entry><title type="html">Intro to asynchronous iteration</title><link href="/blog/2020/04/25/async-intro.html" rel="alternate" type="text/html" title="Intro to asynchronous iteration" /><published>2020-04-25T00:00:00+00:00</published><updated>2020-04-25T00:00:00+00:00</updated><id>/blog/2020/04/25/async-intro</id><content type="html" xml:base="/blog/2020/04/25/async-intro.html">&lt;p&gt;In this series of posts I will review work I did recently which combined iteration with asynchronous development.
+Combining the two allows us to manually schedule both RAM as well as CPU to process large files in a streaming
+fashion while utilizing both pipeline as well as fan-out parallelism.  The end result is something similar to
+reactive programming but pull based instead of push based.&lt;/p&gt;
+
+&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;This article will assume you are familiar with some basic asynchronous programming concepts.
+Callbacks/delegates and promises/futures/tasks are used throughout these posts.  If you are new to asynchronous
+programming I recommend checking out a short &lt;a href=&quot;https://youtu.be/_7UZi-BVgfg&quot;&gt;video&lt;/a&gt; I made recently explaining
+the benefits.  In addition, you will probably want to be familiar with what an iterator is and how they can be
+used to reduce the memory pressure of an application.  Finally, I’ll be using C# for code blocks as C# has a
+good combination of builtin async support and conciseness.  I’ll avoid some of the newer features (e.g. 
+async/await, span, etc.) to keep things universal.&lt;/p&gt;
+
+&lt;p&gt;Before we define asynchronous iteration let us start with some motivation and a concrete example.  I recently did
+some work for the Apache Arrow project which is the basis of these posts.  I worked on the dataset scanner which
+scans a collection of files in an iterative fashion to allow incremental analytics to run on datasets larger than
+the available RAM in the system.  The first thing the scanner needs to do is start reading data from files.&lt;/p&gt;
+
+&lt;p&gt;File I/O is a simple operation that is often handled asynchronously.  File I/O will be the motivation behind most
+of these posts as it was the motivation behind my work on Arrow.  When reading data from a disk we make an OS call
+and that call might block.  To handle this, most modern languages give us asynchronous methods for reading files.
+There are a number of technologies (e.g. epoll &amp;amp; libuv, io_uring, IOCP) that might be behind these methods but the
+specifics don’t matter.&lt;/p&gt;
+
+&lt;p&gt;With that out of the way we can go ahead and concretely define what an asynchronous iterator is.  I’ll add a
+definition for a synchronous iterator as well so you can see the contrast:&lt;/p&gt;
+
+&lt;div class=&quot;language-csharp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;interface&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Iterator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;T&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;Next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;interface&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;AsyncIterator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;Task&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;Next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;There remains the minor matter of determining when we have reached the end of iteration but for simplicity we
+will define the end marker as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;null&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;our-first-asynciterator&quot;&gt;Our First AsyncIterator&lt;/h1&gt;
+
+&lt;p&gt;Now we can take a pass at defining a simple asynchronous iterator for reading a file:&lt;/p&gt;
+
+&lt;div class=&quot;language-csharp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Buffer&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;byte&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Data&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Length&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;AsyncFileIterator&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AsyncIterator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Buffer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Task&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Buffer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;Next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The details of the implementation are omitted for brevity.  What is important to understand is that the
+file read is broken into two stages.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;A synchronous &lt;strong&gt;provisioning&lt;/strong&gt; step that calculates the offset into the file to read (since we are streaming
+a file this offset will grow by some block size each call).&lt;/li&gt;
+  &lt;li&gt;An asynchronous &lt;strong&gt;execution&lt;/strong&gt; step that actually performs the read.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Although we are currently talking about files this pattern of synchronous &lt;strong&gt;provisioning&lt;/strong&gt; and asynchronous
+&lt;strong&gt;execution&lt;/strong&gt; is present in nearly every asynchronous generator.  We will revisit these concepts when we
+start to look at parallel execution.&lt;/p&gt;
+
+&lt;h1 id=&quot;iteration&quot;&gt;Iteration&lt;/h1&gt;
+
+&lt;p&gt;The first (and most basic) goal is iterating through each item in the iterator until we reach the end.
+Let’s consider a simple &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Visit&lt;/code&gt; operation:&lt;/p&gt;
+
+&lt;div class=&quot;language-csharp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;Visit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;AsyncIterator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;iterator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Action&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;visitor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Again we will skip the details but the flow of execution is roughly:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Do:
+  Provision next task from the asynchronous iterator
+  Wait for the task to complete
+  Run visitor on result
+While result != null
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Assuming you have &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;async/await&lt;/code&gt; keywords this method is actually pretty easy to implement.  Without them it turns into
+a tricky set of recursive continuations.  The important things to note here is that &lt;strong&gt;each task must be completed before
+we provision the next task.&lt;/strong&gt;  When we start to talk about parallel execution this rule will get relaxed and more nuance
+will be introduced.  With this rule in place there is no need for any synchronization (beyond that which is likely contained
+in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Task&lt;/code&gt; (i.e. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;promise/future&lt;/code&gt;) implementation.)&lt;/p&gt;
+
+&lt;h1 id=&quot;so-what&quot;&gt;So what?&lt;/h1&gt;
+
+&lt;p&gt;Given that we are waiting for each item to complete before processing the next it may be prudent to ask if we have changed anything
+at all from the synchronous version.  As it turns out, we have.  In the synchronous version the thread that calls &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Visit&lt;/code&gt; will be
+blocked for the duration of the call.  In the asynchronous version a task is scheduled each time a block of I/O completes and the calling
+thread returns immediately.  The exact details of what happens when a task is scheduled depends on the tools you are using
+(perhaps I will write about that in the future) but to illustrate this here are two instances of a basic file visit in C#, visualized
+with the Visual Studio Concurrency Visualizer:&lt;/p&gt;
+
+&lt;p&gt;[&lt;img src=&quot;/blog/assets/images/sync-file-iter.png&quot; alt=&quot;sync&quot; /&gt;]&lt;/p&gt;
+
+&lt;p&gt;In the above syncrhonous version the main thread is doing all the work (green).&lt;/p&gt;
+
+&lt;p&gt;[&lt;img src=&quot;/blog/assets/images/async-file-iter.png&quot; alt=&quot;async&quot; /&gt;]&lt;/p&gt;
+
+&lt;p&gt;In the above asynchronous version the work (green) is spread out across a number of worker threads while the main thread is mostly idle.&lt;/p&gt;
+
+&lt;p&gt;There is no significant performance difference between the two approaches because there is no actual parallelism going on.
+However, by freeing up the calling thread, we can reduce the total number of threads that we need (this reduction is not well illustrated
+in the above diagrams due to the simplicity of the task but for more details see the video linked in the introduction).&lt;/p&gt;
+
+&lt;h1 id=&quot;whats-next&quot;&gt;What’s next?&lt;/h1&gt;
+
+&lt;p&gt;In the next post I will go over readahead and introduce a new concept I’ve coined “asynchronous reentrancy.”  I will show how readahead
+makes it easy to introduce parallelism in asynchronous iterators.&lt;/p&gt;
+
+&lt;h1 id=&quot;try-it-out&quot;&gt;Try it out&lt;/h1&gt;
+
+&lt;p&gt;Implementing a basic &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AsyncFileIterator&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Visit&lt;/code&gt; function should only take a moment in C# (assuming familiarity with TPL) or Javascript.
+Give it a shot and prove to yourself it works.&lt;/p&gt;</content><author><name></name></author><summary type="html">In this series of posts I will review work I did recently which combined iteration with asynchronous development. Combining the two allows us to manually schedule both RAM as well as CPU to process large files in a streaming fashion while utilizing both pipeline as well as fan-out parallelism. The end result is something similar to reactive programming but pull based instead of push based.</summary></entry></feed>
