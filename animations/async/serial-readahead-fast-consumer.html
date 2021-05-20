@@ -1,0 +1,224 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+    <style type="text/css">
+      * {
+        font-family: 'Roboto Mono', monospace;
+      }
+      .source-sink {
+          fill: #b2ebf2;
+      }
+      text {
+          text-anchor: middle;
+      }
+      .label {
+          text-anchor: initial;
+      }
+      .path {
+          stroke: #e0e0e0;
+          stroke-dasharray: 4;
+          stroke-width: 4px;
+      }
+      .request {
+          stroke: #f44336;
+          stroke-width: 2px;
+          fill: white;
+      }
+      .promise {
+          stroke: #4caf50;
+          stroke-width: 2px;
+          fill: white;
+          transform-origin: center;
+          transform-box: fill-box;
+      }
+      .future {
+          stroke: #ab47bc;
+          stroke-width: 2px;
+          fill: white;
+      }
+      .initially-invisible {
+          opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+        <svg viewBox="0 0 1000 150" width="1000" height="150">
+            <g transform="translate(50,25)">
+                <rect width="100" height="100" class="source-sink"></rect>
+                <g transform="translate(50, 50)">
+                    <text>
+                        <tspan x="0" dy="0em">File</tspan>
+                        <tspan x="0" dy="1em">System</tspan>
+                    </text>
+                </g>
+            </g>
+            <g transform="translate(325,25)">
+                <rect width="100" height="100" class="source-sink"></rect>
+                <g transform="translate(50, 50)">
+                    <text>
+                        <tspan x="0" dy="0em">Serial</tspan>
+                        <tspan x="0" dy="1em">Readahead</tspan>
+                    </text>
+                </g>
+            </g>
+            <g transform="translate(600,25)">
+                <rect width="100" height="100" class="source-sink"></rect>
+                <g transform="translate(50, 50)">
+                    <text>
+                        <tspan x="0" dy="0em">User</tspan>
+                        <tspan x="0" dy="1em">App</tspan>
+                    </text>
+                </g>
+            </g>
+            <line x1="150" x2="325" y1="100" y2="100" class="path"></line>
+            <line x1="150" x2="325" y1="50" y2="50" class="path"></line>
+            <line x1="425" x2="600" y1="100" y2="100" class="path"></line>
+            <line x1="425" x2="600" y1="50" y2="50" class="path"></line>
+            <circle id="r" cx="585" cy="100" r="5" class="request"></circle>
+            <circle id="r2" cx="310" cy="100" r="5" class="request initially-invisible"></circle>
+            <circle id="r3" cx="310" cy="100" r="5" class="request initially-invisible"></circle>
+            <circle id="r4" cx="585" cy="100" r="5" class="request initially-invisible"></circle>
+            <rect id="p" x="325" y="5" width="10" height="10" class="promise initially-invisible"></rect>
+            <rect id="p2" x="30" y="95" width="10" height="10" class="promise initially-invisible"></rect>
+            <circle id="f" cx="440" cy="50" r="5" class="future initially-invisible"></circle>
+            <circle id="f2" cx="165" cy="50" r="5" class="future initially-invisible"></circle>
+            <g transform="translate(100, 0)">
+                <circle cx="50" cy="140" r="5" class="request"></circle>
+                <text class="label" x="70" y="140" dy="0.35em">Request</text>
+                <rect x="150" y="135" width="10" height="10" class="promise"></rect>
+                <text class="label" x="175" y="140" dy="0.35em">Promise</text>
+                <circle cx="270" cy="140" r="5" class="future"></circle>
+                <text class="label" x="290" y="140" dy="0.35em">Future</text>
+            </g>
+        </svg>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.0.1/lib/anime.min.js"></script>
+    <script>
+        const futureFill = '#b39ddb';
+        const promiseFill = '#81c784';
+        const white = '#ffffff';
+        let durations = [2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000]
+        let remaining = function(idx) {
+            let sum = 0;
+            for (let i = idx; i < durations.length; i++) {
+                sum += durations[i];
+            }
+            return sum;
+        };
+        let range = function(idx1, idx2) {
+            let sum = 0;
+            for (let i = idx1; i < idx2; i++) {
+                sum += durations[i];
+            }
+            return sum;
+        };
+        let animation = anime.timeline({
+          easing: 'easeInOutSine',   
+          loop: true,
+          duration: remaining(0)
+        });           
+        animation.add({
+          targets: '#r',
+          keyframes: [
+            { translateX: -145, duration: durations[0] },
+            { opacity: 0, duration: durations[1] },
+            { duration: remaining(2) }
+          ]
+        }).add({
+          targets: '#r2',
+          keyframes: [
+            { duration: durations[0] },
+            { opacity: 1, duration: durations[1] },
+            { translateX: -145, duration: durations[2] },
+            { duration: durations[3], opacity: 0 },
+            { duration: remaining(4) }
+          ]
+        }, 0).add({
+          targets: '#p',
+          keyframes: [
+            { duration: durations[0] },
+            { opacity: 1, duration: durations[1] },
+            { duration: range(2, 7) },
+            { duration: durations[7], fill: promiseFill },
+            { duration: durations[8] },
+            { duration: durations[9], opacity: 0 },
+            { duration: durations[10], fill: white },
+            { duration: durations[11], opacity: 1 },
+            { duration: durations[12] },
+            { duration: durations[13] },
+            { duration: durations[14], fill: promiseFill }
+          ]
+        }, 0).add({
+          targets: '#f',
+          keyframes: [
+            { duration: durations[0] },
+            { opacity: 1, duration: durations[1] },
+            { translateX: 145, duration: durations[2] },
+            { duration: range(3, 7) },
+            { duration: durations[7], fill: futureFill },
+            { duration: durations[8] },
+            { duration: durations[9], opacity: 0 },
+            { duration: durations[10], fill: white, translateX: 0 },
+            { duration: durations[11], opacity: 1 },
+            { duration: durations[12], translateX: 145 },
+            { duration: durations[13] },
+            { duration: durations[14], fill: futureFill }
+          ]
+        }, 0).add({
+          targets: '#p2',
+          keyframes: [
+            { duration: range(0, 3) },
+            { opacity: 1, duration: durations[3] },
+            { duration: range(4, 6), rotate: '4turn' },
+            { duration: durations[6], fill: promiseFill },
+            { duration: durations[7], opacity: 0 },
+            { duration: range(8, 10), rotate: '0turn', fill: white },
+            { duration: durations[10], opacity: 1 },
+            { duration: range(11, 13), rotate: '4turn' },
+            { duration: durations[13], fill: promiseFill },
+            { duration: durations[14], opacity: 0 }
+          ]
+        }, 0).add({
+          targets: '#f2',
+          keyframes: [
+            { duration: range(0, 3) },
+            { opacity: 1, duration: durations[3] },
+            { translateX: 145, duration: durations[4] },
+            { duration: durations[5] },
+            { duration: durations[6], fill: futureFill },
+            { duration: durations[7] },
+            { duration: durations[8], opacity: 0 },
+            { duration: range(9, 10), translateX: 0, fill: white },
+            { duration: durations[10], opacity: 1 },
+            { duration: durations[11], translateX: 145 },
+            { duration: durations[12] },
+            { duration: durations[13], fill: futureFill },
+            { duration: durations[14] }
+          ]
+        }, 0).add({
+          targets: '#r3',
+          keyframes: [
+            { duration: range(0, 8) },
+            { opacity: 1, duration: durations[8] },
+            { translateX: -145, duration: durations[9] },
+            { duration: durations[10], opacity: 0 },
+            { duration: remaining(11) }
+          ]
+        }, 0).add({
+          targets: '#r4',
+          keyframes: [
+            { duration: range(0, 9) },
+            { opacity: 1, duration: durations[9] },
+            { duration: durations[10], translateX: -145 },
+            { duration: durations[11], opacity: 0 },
+            { duration: remaining(12) }
+          ]
+        }, 0);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+    <style type="text/css">
+      * {
+        font-family: 'Roboto Mono', monospace;
+      }
+      .source-sink {
+          fill: #b2ebf2;
+      }
+      text {
+          text-anchor: middle;
+      }
+      .label {
+          text-anchor: initial;
+      }
+      .path {
+          stroke: #e0e0e0;
+          stroke-dasharray: 4;
+          stroke-width: 4px;
+      }
+      .request {
+          stroke: #f44336;
+          stroke-width: 2px;
+          fill: white;
+      }
+      .promise {
+          stroke: #4caf50;
+          stroke-width: 2px;
+          fill: white;
+          transform-origin: center;
+          transform-box: fill-box;
+      }
+      .future {
+          stroke: #ab47bc;
+          stroke-width: 2px;
+          fill: white;
+      }
+      .initially-invisible {
+          opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+        <svg viewBox="0 0 1000 150" width="1000" height="150">
+            <g transform="translate(50,25)">
+                <rect width="100" height="100" class="source-sink"></rect>
+                <g transform="translate(50, 50)">
+                    <text>
+                        <tspan x="0" dy="0em">File</tspan>
+                        <tspan x="0" dy="1em">System</tspan>
+                    </text>
+                </g>
+            </g>
+            <g transform="translate(450,25)">
+                <rect width="100" height="100" class="source-sink"></rect>
+                <g transform="translate(50, 50)">
+                    <text>
+                        <tspan x="0" dy="0em">User</tspan>
+                        <tspan x="0" dy="1em">App</tspan>
+                    </text>
+                </g>
+            </g>
+            <line x1="150" x2="450" y1="100" y2="100" class="path"></line>
+            <line x1="150" x2="450" y1="50" y2="50" class="path"></line>
+            <circle id="request" cx="430" cy="100" r="5" class="request"></circle>
+            <rect id="promise" x="30" y="95" width="10" height="10" class="promise initially-invisible"></rect>
+            <circle id="future" cx="170" cy="50" r="5" class="future initially-invisible"></circle>
+            <g transform="translate(100, 0)">
+                <circle cx="50" cy="140" r="5" class="request"></circle>
+                <text class="label" x="70" y="140" dy="0.35em">Request</text>
+                <rect x="150" y="135" width="10" height="10" class="promise"></rect>
+                <text class="label" x="175" y="140" dy="0.35em">Promise</text>
+                <circle cx="270" cy="140" r="5" class="future"></circle>
+                <text class="label" x="290" y="140" dy="0.35em">Future</text>
+            </g>
+        </svg>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.0.1/lib/anime.min.js"></script>
+    <script>
+        let durations = [3000, 1000, 1500, 3000, 1000, 1000, 2000]
+        let remaining = function(idx) {
+            let sum = 0;
+            for (let i = idx; i < durations.length; i++) {
+                sum += durations[i];
+            }
+            return sum;
+        };
+        let range = function(idx1, idx2) {
+            let sum = 0;
+            for (let i = idx1; i < idx2; i++) {
+                sum += durations[i];
+            }
+            return sum;
+        };
+        let animation = anime.timeline({
+          easing: 'easeInOutSine',   
+          loop: true,
+          duration: remaining(0)
+        });           
+
+        animation.add({
+          targets: '#request',
+          keyframes: [
+            { translateX: -260, duration: durations[0] },
+            { opacity: 0, duration: durations[1] },
+            { duration: remaining[2] }
+          ]
+        }).add({
+          targets: '#promise',
+          keyframes: [
+            { duration: durations[1], opacity: 1, scale: 0.95 },
+            { duration: remaining[2] }
+          ]
+        }, durations[0]).add({
+          targets: '#promise',
+          keyframes: [
+            { duration: range(2, 4), rotate: '4turn' },
+            { duration: durations[4], fill: '#81c784' },
+            { duration: durations[5], opacity: 0 },
+            { duration: remaining(6) }
+          ]
+        }, range(0, 2)).add({
+          targets: '#future',
+          keyframes: [
+            { duration: durations[1], opacity: 1 },
+            { duration: durations[2], translateX: 260},
+            { duration: durations[3] },
+            { duration: durations[4], fill: '#b39ddb' },
+            { duration: remaining(5) }
+          ]
+        }, durations[0]);
+    </script>
+  </body>
+</html>
