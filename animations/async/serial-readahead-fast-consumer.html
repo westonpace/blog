@@ -9,7 +9,7 @@
       * {
         font-family: 'Roboto Mono', monospace;
       }
-      .source-sink {
+      .operator {
           fill: #b2ebf2;
       }
       text {
@@ -47,7 +47,10 @@
   </head>
   <body>
     <div class="container">
-        <svg viewBox="0 0 1000 150" width="1000" height="150">
+      <svg id="svg-root" viewBox="0 0 1000 150" width="1000" height="150">
+
+      </svg>
+        <!--svg viewBox="0 0 1000 150" width="1000" height="150">
             <g transform="translate(50,25)">
                 <rect width="100" height="100" class="source-sink"></rect>
                 <g transform="translate(50, 50)">
@@ -95,130 +98,9 @@
                 <circle cx="270" cy="140" r="5" class="future"></circle>
                 <text class="label" x="290" y="140" dy="0.35em">Future</text>
             </g>
-        </svg>
+        </svg-->
     </div>
     <script src="https://cdn.jsdelivr.net/npm/animejs@3.0.1/lib/anime.min.js"></script>
-    <script>
-        const futureFill = '#b39ddb';
-        const promiseFill = '#81c784';
-        const white = '#ffffff';
-        let durations = [2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000]
-        let remaining = function(idx) {
-            let sum = 0;
-            for (let i = idx; i < durations.length; i++) {
-                sum += durations[i];
-            }
-            return sum;
-        };
-        let range = function(idx1, idx2) {
-            let sum = 0;
-            for (let i = idx1; i < idx2; i++) {
-                sum += durations[i];
-            }
-            return sum;
-        };
-        let animation = anime.timeline({
-          easing: 'easeInOutSine',   
-          loop: true,
-          duration: remaining(0)
-        });           
-        animation.add({
-          targets: '#r',
-          keyframes: [
-            { translateX: -145, duration: durations[0] },
-            { opacity: 0, duration: durations[1] },
-            { duration: remaining(2) }
-          ]
-        }).add({
-          targets: '#r2',
-          keyframes: [
-            { duration: durations[0] },
-            { opacity: 1, duration: durations[1] },
-            { translateX: -145, duration: durations[2] },
-            { duration: durations[3], opacity: 0 },
-            { duration: remaining(4) }
-          ]
-        }, 0).add({
-          targets: '#p',
-          keyframes: [
-            { duration: durations[0] },
-            { opacity: 1, duration: durations[1] },
-            { duration: range(2, 7) },
-            { duration: durations[7], fill: promiseFill },
-            { duration: durations[8] },
-            { duration: durations[9], opacity: 0 },
-            { duration: durations[10], fill: white },
-            { duration: durations[11], opacity: 1 },
-            { duration: durations[12] },
-            { duration: durations[13] },
-            { duration: durations[14], fill: promiseFill }
-          ]
-        }, 0).add({
-          targets: '#f',
-          keyframes: [
-            { duration: durations[0] },
-            { opacity: 1, duration: durations[1] },
-            { translateX: 145, duration: durations[2] },
-            { duration: range(3, 7) },
-            { duration: durations[7], fill: futureFill },
-            { duration: durations[8] },
-            { duration: durations[9], opacity: 0 },
-            { duration: durations[10], fill: white, translateX: 0 },
-            { duration: durations[11], opacity: 1 },
-            { duration: durations[12], translateX: 145 },
-            { duration: durations[13] },
-            { duration: durations[14], fill: futureFill }
-          ]
-        }, 0).add({
-          targets: '#p2',
-          keyframes: [
-            { duration: range(0, 3) },
-            { opacity: 1, duration: durations[3] },
-            { duration: range(4, 6), rotate: '4turn' },
-            { duration: durations[6], fill: promiseFill },
-            { duration: durations[7], opacity: 0 },
-            { duration: range(8, 10), rotate: '0turn', fill: white },
-            { duration: durations[10], opacity: 1 },
-            { duration: range(11, 13), rotate: '4turn' },
-            { duration: durations[13], fill: promiseFill },
-            { duration: durations[14], opacity: 0 }
-          ]
-        }, 0).add({
-          targets: '#f2',
-          keyframes: [
-            { duration: range(0, 3) },
-            { opacity: 1, duration: durations[3] },
-            { translateX: 145, duration: durations[4] },
-            { duration: durations[5] },
-            { duration: durations[6], fill: futureFill },
-            { duration: durations[7] },
-            { duration: durations[8], opacity: 0 },
-            { duration: range(9, 10), translateX: 0, fill: white },
-            { duration: durations[10], opacity: 1 },
-            { duration: durations[11], translateX: 145 },
-            { duration: durations[12] },
-            { duration: durations[13], fill: futureFill },
-            { duration: durations[14] }
-          ]
-        }, 0).add({
-          targets: '#r3',
-          keyframes: [
-            { duration: range(0, 8) },
-            { opacity: 1, duration: durations[8] },
-            { translateX: -145, duration: durations[9] },
-            { duration: durations[10], opacity: 0 },
-            { duration: remaining(11) }
-          ]
-        }, 0).add({
-          targets: '#r4',
-          keyframes: [
-            { duration: range(0, 9) },
-            { opacity: 1, duration: durations[9] },
-            { duration: durations[10], translateX: -145 },
-            { duration: durations[11], opacity: 0 },
-            { duration: remaining(12) }
-          ]
-        }, 0);
-    </script>
+    <script src="./animations.js"></script>
   </body>
 </html>
