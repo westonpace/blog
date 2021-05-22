@@ -33,7 +33,20 @@ class Scene {
         this.time = 0;
         this.elapsed = 0;
         this.animations = [];
+        this.tasks = [];
         this.timeline = null;
+    }
+
+    addTask(task, time) {
+        this.tasks.push({task, time});
+    }
+
+    finishTask() {
+        if (this.tasks.length > 0) {
+            let nextTask = this.tasks.pop();
+            this.time = nextTask.time;
+            nextTask.task();
+        }
     }
 
     tick() {
@@ -239,10 +252,6 @@ class Operator {
         scene.svgRoot.appendChild(operatorGroup);
     }
 
-    run(scene) {
-
-    }
-
 };
 
 class FileSystem extends Operator {
@@ -260,11 +269,11 @@ class FileSystem extends Operator {
         this.scene.tick();
         this.scene.sendFuture(fut);
         this.scene.workPromise(promise, this.ticksPerRequest);
-        for (let i = 0; i < this.ticksPerRequest; i++) {
-            this.scene.tick();
-        }
-        this.scene.fill(fut, promise);
-        this.upstream.receiveFilledFuture(fut, promise);
+        this.scene.addTask(() => {
+            this.scene.fill(fut, promise);
+            this.upstream.receiveFilledFuture(fut, promise);
+        }, this.scene.time + this.ticksPerRequest * msPerTick);
+        this.scene.finishTask();
     }
 
 };
@@ -295,6 +304,29 @@ class UserApp extends Operator {
 
 }
 
+class SerialReadahead extends Operator {
+
+    constructor() {
+        super(['Serial', 'Readahead']);
+        this.downstream = null;
+        this.upstream = null;
+        this.queuedFutures = [];
+    }
+
+    receiveRequest(req) {
+        this.scene.remove(req);
+        if (this.queuedFutures.length > 0) {
+            let fut = this.queuedFutures.shift(1);
+        } else {
+
+        }
+    }
+
+    receiveFilledFuture() {
+
+    }
+}
+
 function run() {
 
     const svgRoot = document.querySelector('#svg-root');
@@ -317,120 +349,3 @@ function run() {
 window.addEventListener('load', () => {
     run();
 });
-
-// let remaining = function (idx) {
-//     let sum = 0;
-//     for (let i = idx; i < durations.length; i++) {
-//         sum += durations[i];
-//     }
-//     return sum;
-// };
-// let range = function (idx1, idx2) {
-//     let sum = 0;
-//     for (let i = idx1; i < idx2; i++) {
-//         sum += durations[i];
-//     }
-//     return sum;
-// };
-// let animation = anime.timeline({
-//     easing: 'easeInOutSine',
-//     loop: true,
-//     duration: remaining(0)
-// });
-// animation.add({
-//     targets: '#r',
-//     keyframes: [
-//         { translateX: -145, duration: durations[0] },
-//         { opacity: 0, duration: durations[1] },
-//         { duration: remaining(2) }
-//     ]
-// }).add({
-//     targets: '#r2',
-//     keyframes: [
-//         { duration: durations[0] },
-//         { opacity: 1, duration: durations[1] },
-//         { translateX: -145, duration: durations[2] },
-//         { duration: durations[3], opacity: 0 },
-//         { duration: remaining(4) }
-//     ]
-// }, 0).add({
-//     targets: '#p',
-//     keyframes: [
-//         { duration: durations[0] },
-//         { opacity: 1, duration: durations[1] },
-//         { duration: range(2, 7) },
-//         { duration: durations[7], fill: promiseFill },
-//         { duration: durations[8] },
-//         { duration: durations[9], opacity: 0 },
-//         { duration: durations[10], fill: white },
-//         { duration: durations[11], opacity: 1 },
-//         { duration: durations[12] },
-//         { duration: durations[13] },
-//         { duration: durations[14], fill: promiseFill }
-//     ]
-// }, 0).add({
-//     targets: '#f',
-//     keyframes: [
-//         { duration: durations[0] },
-//         { opacity: 1, duration: durations[1] },
-//         { translateX: 145, duration: durations[2] },
-//         { duration: range(3, 7) },
-//         { duration: durations[7], fill: futureFill },
-//         { duration: durations[8] },
-//         { duration: durations[9], opacity: 0 },
-//         { duration: durations[10], fill: white, translateX: 0 },
-//         { duration: durations[11], opacity: 1 },
-//         { duration: durations[12], translateX: 145 },
-//         { duration: durations[13] },
-//         { duration: durations[14], fill: futureFill }
-//     ]
-// }, 0).add({
-//     targets: '#p2',
-//     keyframes: [
-//         { duration: range(0, 3) },
-//         { opacity: 1, duration: durations[3] },
-//         { duration: range(4, 6), rotate: '4turn' },
-//         { duration: durations[6], fill: promiseFill },
-//         { duration: durations[7], opacity: 0 },
-//         { duration: range(8, 10), rotate: '0turn', fill: white },
-//         { duration: durations[10], opacity: 1 },
-//         { duration: range(11, 13), rotate: '4turn' },
-//         { duration: durations[13], fill: promiseFill },
-//         { duration: durations[14], opacity: 0 }
-//     ]
-// }, 0).add({
-//     targets: '#f2',
-//     keyframes: [
-//         { duration: range(0, 3) },
-//         { opacity: 1, duration: durations[3] },
-//         { translateX: 145, duration: durations[4] },
-//         { duration: durations[5] },
-//         { duration: durations[6], fill: futureFill },
-//         { duration: durations[7] },
-//         { duration: durations[8], opacity: 0 },
-//         { duration: range(9, 10), translateX: 0, fill: white },
-//         { duration: durations[10], opacity: 1 },
-//         { duration: durations[11], translateX: 145 },
-//         { duration: durations[12] },
-//         { duration: durations[13], fill: futureFill },
-//         { duration: durations[14] }
-//     ]
-// }, 0).add({
-//     targets: '#r3',
-//     keyframes: [
-//         { duration: range(0, 8) },
-//         { opacity: 1, duration: durations[8] },
-//         { translateX: -145, duration: durations[9] },
-//         { duration: durations[10], opacity: 0 },
-//         { duration: remaining(11) }
-//     ]
-// }, 0).add({
-//     targets: '#r4',
-//     keyframes: [
-//         { duration: range(0, 9) },
-//         { opacity: 1, duration: durations[9] },
-//         { duration: durations[10], translateX: -145 },
-//         { duration: durations[11], opacity: 0 },
-//         { duration: remaining(12) }
-//     ]
-// }, 0);
