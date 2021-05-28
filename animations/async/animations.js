@@ -1,5 +1,6 @@
 const futureFill = '#b39ddb';
 const promiseFill = '#81c784';
+const promisePartialFill = '#616161';
 const white = '#ffffff';
 let durations = [2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000];
 
@@ -13,7 +14,7 @@ const operatorSpacing = 150;
 const itemMargin = 15;
 const itemR = 5;
 const promiseSize = itemR * 2;
-const msPerTick = 500;
+const msPerTick = 1000;
 const maxTime = msPerTick * 100;
 const workingY = topPadding + operatorHeight + itemMargin;
 const queueY = topPadding - itemMargin;
@@ -69,11 +70,12 @@ class Scene {
         }
     }
 
-    finish() {
+    finish(updateFunc) {
         const timeline = anime.timeline({
             easing: 'easeInOutSine',
             loop: true,
-            duration: this.time + msPerTick
+            duration: this.time + msPerTick,
+            update: updateFunc
         });
         for (const animation of this.animations) {
             timeline.add({
@@ -81,6 +83,11 @@ class Scene {
                 keyframes: animation.keyframes
             }, 0);
         }
+        return {
+            timeline,
+            duration: this.time + msPerTick,
+            msPerTick
+        };
     }
 
     addKeyframe(animation, keyframe) {
@@ -129,6 +136,11 @@ class Scene {
         return start + (idx * itemMargin);
     }
 
+    shiftX(item, startX, endX) {
+        let deltaX = this.getItemX(0, startX) - this.getItemX(0, endX);
+        this.addKeyframe(item, { duration: msPerTick, translateX: deltaX });
+    }
+
     createQueuedFuture(x, queueIdx = 0) {
         const id = this.getId();
         const fut = svgEl('circle');
@@ -154,7 +166,9 @@ class Scene {
         promise.setAttribute('y', workingY - itemR);
         promise.setAttribute('class', 'promise initially-invisible');
         let result = this.createAnimation(id, x, false);
-        result.future = future;
+        if (future) {
+            result.future = future;
+        }
         return result;
     }
 
@@ -201,7 +215,14 @@ class Scene {
         fut.park = this.time + msPerTick;
     }
 
+    partialFill(promise) {
+        promise.filled = true;
+        this.addKeyframe(promise, { duration: msPerTick, fill: promisePartialFill });
+    }
+
     fill(fut, promise = null) {
+        fut.filled = true;
+        promise.filled = true;
         this.addKeyframe(fut, { duration: msPerTick, fill: futureFill });
         if (promise) {
             this.addKeyframe(promise, { duration: msPerTick, fill: promiseFill });
@@ -374,20 +395,33 @@ class SerialReadahead extends Operator {
         super(['Serial', 'Readahead']);
         this.downstream = null;
         this.upstream = null;
-        this.queuedFutures = [];
+        // Queued responses
+        this.bufferedPromises = [];
+        // Queued requests
         this.queuedPromises = [];
+    }
+
+    shiftPromisesLeft(idx) {
+        let combined = this.bufferedPromises.concat(this.queuedPromises);
+        for (let i = idx; i < combined.length; i++) {
+            this.scene.shiftX(combined[i], i + 1, i);
+        }
     }
 
     receiveRequest(req) {
         this.scene.remove(req);
-        if (this.queuedFutures.length > 0) {
-            const fut = this.queuedFutures.shift(1);
-            this.scene.remove(fut);
-            const upFut = this.scene.createFuture(this.x, fut.filled);
+        if (this.bufferedPromises.length > 0) {
+            const promise = this.bufferedPromises.shift(1);
+            const fut = this.scene.createFuture(this.x, fut.filled);
+            promise.future = fut;
             this.scene.tick();
-            this.scene.sendFuture(upFut);
+            this.scene.fill(fut, promise);
             this.scene.tick();
-            return upFut;
+            this.scene.remove(promise);
+            this.scene.tick();
+            this.shiftPromisesLeft(0);
+            this.scene.sendFuture(fut);
+            return fut;
         } else {
             const queueX = this.queuedPromises.length;
             const fut = this.scene.createFuture(this.x);
@@ -406,25 +440,40 @@ class SerialReadahead extends Operator {
         }
     }
 
+    firstUnfilledPromiseIdx() {
+        for (let i = 0; i < this.queuedPromises.length; i++) {
+            const promise = this.queuedPromises[i];
+            if (!promise.filled) {
+                return i;
+            } 
+        }
+        throw new Exception("Expected an unfilled promise");
+    }
+
     onFill(fut) {
         this.scene.remove(fut);
         this.scene.tick();
         if (this.queuedPromises.length > 0) {
-            const promise = this.queuedPromises.shift();
-            const future = promise.future;
+            const promiseIdx = this.firstUnfilledPromiseIdx();
+            const promise = this.queuedPromises[promiseIdx];
             const req = this.scene.createRequest(this.x);
+            this.scene.partialFill(promise);
             this.scene.tick();
             this.scene.sendRequest(req);
             this.scene.tick();
+            const newPromise = this.scene.createWorkingPromise(this.x, null, this.queuedPromises.length);
             const downFut = this.downstream.receiveRequest(req);
             this.scene.remove(downFut);
-            this.queuedFutures.push(downFut);
-            this.scene.createQueuedFuture(this.x, this.queuedFutures.length);
-            this.scene.fill(future, promise);
-            this.scene.remove(promise);
-            triggerCb(future.callback);
+            const future = promise.future;
+            this.queuedPromises.push(newPromise);
+            if (future) {
+                this.scene.fill(future, promise);
+                this.scene.tick();
+                this.shiftPromisesLeft(promiseIdx);
+                this.scene.remove(promise);
+                triggerCb(future.callback);
+            }
         } else {
-            this.queuedFutures.push(fut);
             this.scene.createQueuedFuture(this.x, this.queuedFutures.length);
             const req = this.scene.createRequest(this.x);
             this.scene.tick();
@@ -443,7 +492,7 @@ class SerialReadahead extends Operator {
 
 }
 
-function run() {
+function run(updateFunc) {
 
     const svgRoot = document.querySelector('#svg-root');
 
@@ -470,9 +519,24 @@ function run() {
 
     userApp.start();
 
-    scene.finish();
+    return scene.finish(updateFunc);
 }
 
 window.addEventListener('load', () => {
-    run();
+    const progress = document.querySelector('#progress');
+    let timeline = null;
+    const params = run((anim) => {
+        const pos = Math.round(timeline.progress / 100.0 * timeline.duration);
+        progress.value = pos;
+    });
+    timeline = params.timeline;
+    progress.setAttribute('min', '0');
+    progress.setAttribute('max', timeline.duration);
+    progress.setAttribute('step', params.msPerTick / 2);
+    document.querySelector('#play').onclick = timeline.play;
+    document.querySelector('#restart').onclick = timeline.restart;
+    document.querySelector('#pause').onclick = timeline.pause;
+    progress.addEventListener('input', function() {
+        timeline.seek(progress.value);
+    });
 });
