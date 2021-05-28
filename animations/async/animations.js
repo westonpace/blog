@@ -40,7 +40,9 @@ class Scene {
     }
 
     addTask(task, time) {
-        this.tasks.push({ task, time });
+        if (time < maxTime) {
+            this.tasks.push({ task, time });
+        }
     }
 
     finishTask() {
@@ -137,7 +139,7 @@ class Scene {
     }
 
     shiftX(item, startX, endX) {
-        let deltaX = this.getItemX(0, startX) - this.getItemX(0, endX);
+        let deltaX = this.getQueueX(0, endX) - this.getQueueX(0, startX);
         this.addKeyframe(item, { duration: msPerTick, translateX: deltaX });
     }
 
@@ -222,9 +224,9 @@ class Scene {
 
     fill(fut, promise = null) {
         fut.filled = true;
-        promise.filled = true;
         this.addKeyframe(fut, { duration: msPerTick, fill: futureFill });
         if (promise) {
+            promise.filled = true;
             this.addKeyframe(promise, { duration: msPerTick, fill: promiseFill });
         }
     }
@@ -389,37 +391,101 @@ class UserApp extends Operator {
 
 }
 
+class MapOp extends Operator {
+    constructor(fnName, ticksOfWork) {
+        super(['Map', `(${fnName})`]);
+        this.downstream = null;
+        this.queuedPromises = [];
+        this.ticksOfWork = ticksOfWork;
+    }
+
+    firstUnfilledPromiseIdx() {
+        for (let i = 0; i < this.queuedPromises.length; i++) {
+            const promise = this.queuedPromises[i];
+            if (!promise.filled) {
+                return i;
+            }
+        }
+        throw new Exception("Expected an unfilled promise");
+    }
+
+    shiftPromisesLeft(idx) {
+        for (let i = idx; i < this.queuedPromises.length; i++) {
+            this.scene.shiftX(this.queuedPromises[i], i + 1, i);
+        }
+    }
+
+    receiveRequest(req) {
+        this.scene.remove(req);
+        const queueX = this.queuedPromises.length;
+        const fut = this.scene.createFuture(this.x);
+        const promise = this.scene.createWorkingPromise(this.x, fut, queueX);
+        this.queuedPromises.push(promise);
+        const downReq = this.scene.createRequest(this.x);
+        this.scene.tick();
+        this.scene.sendFuture(fut);
+        this.scene.sendRequest(downReq);
+        const downFut = this.downstream.receiveRequest(downReq);
+        this.scene.tick();
+        addCallback(downFut, () => {
+            this.onFill(downFut);
+        });
+        return fut;
+    }
+
+    onFill(fut) {
+        this.scene.remove(fut);
+        this.scene.tick();
+        const promiseIdx = this.firstUnfilledPromiseIdx();
+        const promise = this.queuedPromises[promiseIdx];
+        this.scene.partialFill(promise);
+        this.scene.tick();
+        this.scene.workPromise(promise, this.ticksOfWork);
+        for (let i = 0; i < this.ticksOfWork; i++) {
+            this.scene.tick();
+        }
+        this.queuedPromises = this.queuedPromises.splice(promiseIdx, 1);
+        this.scene.fill(promise);
+        this.scene.tick();
+        this.shiftPromisesLeft(promiseIdx);
+        this.scene.remove(promise);
+        triggerCb(promise.future.callback);
+    }
+}
+
 class SerialReadahead extends Operator {
 
     constructor() {
         super(['Serial', 'Readahead']);
         this.downstream = null;
         this.upstream = null;
-        // Queued responses
-        this.bufferedPromises = [];
         // Queued requests
         this.queuedPromises = [];
     }
 
     shiftPromisesLeft(idx) {
-        let combined = this.bufferedPromises.concat(this.queuedPromises);
-        for (let i = idx; i < combined.length; i++) {
-            this.scene.shiftX(combined[i], i + 1, i);
+        for (let i = idx; i < this.queuedPromises.length; i++) {
+            this.scene.shiftX(this.queuedPromises[i], i + 1, i);
         }
     }
 
     receiveRequest(req) {
         this.scene.remove(req);
-        if (this.bufferedPromises.length > 0) {
-            const promise = this.bufferedPromises.shift(1);
-            const fut = this.scene.createFuture(this.x, fut.filled);
+        const existingPromiseIdx = this.findNextUnfilledPromise();
+        if (existingPromiseIdx >= 0) {
+            const promise = this.queuedPromises[existingPromiseIdx];
+            this.queuedPromises = this.queuedPromises.splice(existingPromiseIdx, 1);
+            const fut = this.scene.createFuture(this.x, promise.filled);
             promise.future = fut;
+            if (promise.filled) {
+                this.scene.fill(promise);
+            }
             this.scene.tick();
-            this.scene.fill(fut, promise);
-            this.scene.tick();
-            this.scene.remove(promise);
-            this.scene.tick();
-            this.shiftPromisesLeft(0);
+            if (promise.filled) {
+                this.scene.remove(promise);
+                this.shiftPromisesLeft(existingPromiseIdx);
+                this.scene.tick();
+            }
             this.scene.sendFuture(fut);
             return fut;
         } else {
@@ -445,7 +511,7 @@ class SerialReadahead extends Operator {
             const promise = this.queuedPromises[i];
             if (!promise.filled) {
                 return i;
-            } 
+            }
         }
         throw new Exception("Expected an unfilled promise");
     }
@@ -458,15 +524,18 @@ class SerialReadahead extends Operator {
             const promise = this.queuedPromises[promiseIdx];
             const req = this.scene.createRequest(this.x);
             this.scene.partialFill(promise);
+            const newPromise = this.scene.createWorkingPromise(this.x, null, this.queuedPromises.length);
             this.scene.tick();
             this.scene.sendRequest(req);
             this.scene.tick();
-            const newPromise = this.scene.createWorkingPromise(this.x, null, this.queuedPromises.length);
             const downFut = this.downstream.receiveRequest(req);
-            this.scene.remove(downFut);
+            addCallback(downFut, () => {
+                this.onFill(downFut);
+            });
             const future = promise.future;
             this.queuedPromises.push(newPromise);
             if (future) {
+                this.queuedPromises.shift();
                 this.scene.fill(future, promise);
                 this.scene.tick();
                 this.shiftPromisesLeft(promiseIdx);
@@ -474,10 +543,7 @@ class SerialReadahead extends Operator {
                 triggerCb(future.callback);
             }
         } else {
-            this.scene.createQueuedFuture(this.x, this.queuedFutures.length);
-            const req = this.scene.createRequest(this.x);
-            this.scene.tick();
-            this.scene.sendRequest(req);
+            throw new Exception("Should not happen");
         }
     }
 
@@ -497,23 +563,21 @@ function run(updateFunc) {
     const svgRoot = document.querySelector('#svg-root');
 
     const count = new Count();
-    const fileSystem = new FileSystem(6);
+    const fileSystem = new FileSystem(3);
     const serialReadahead = new SerialReadahead();
     const userApp = new UserApp();
+    const map = new MapOp('decompress', 4);
     const scene = new Scene(svgRoot);
 
-    // scene.addOperator(count);
     scene.addOperator(fileSystem);
     scene.addOperator(serialReadahead);
+    scene.addOperator(map);
     scene.addOperator(userApp);
 
     serialReadahead.downstream = fileSystem;
     serialReadahead.upstream = userApp;
-    userApp.downstream = serialReadahead;
-
-    // userApp.downstream = fileSystem;
-
-    // userApp.downstream = count;
+    map.downstream = serialReadahead;
+    userApp.downstream = map;
 
     scene.setup();
 
@@ -536,7 +600,7 @@ window.addEventListener('load', () => {
     document.querySelector('#play').onclick = timeline.play;
     document.querySelector('#restart').onclick = timeline.restart;
     document.querySelector('#pause').onclick = timeline.pause;
-    progress.addEventListener('input', function() {
+    progress.addEventListener('input', function () {
         timeline.seek(progress.value);
     });
 });
